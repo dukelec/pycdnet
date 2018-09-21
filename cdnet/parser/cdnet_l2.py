@@ -36,7 +36,7 @@ def to_frame(src, dst, dat, max_size=253, seq_val=None, pos=0):
     payload += body
     frame = bytes([src_addr[2]]) + bytes([dst_addr[2]]) + bytes([len(payload)+1]) + bytes([hdr]) + payload
     assert len(frame) <= 256
-    return frame, frag and pos+len(body) or None
+    return frame, len(body)
 
 
 def from_frame(frame, local_net=0):
@@ -46,8 +46,8 @@ def from_frame(frame, local_net=0):
     seq_val = None
     user_flag = hdr & 7
     
-    src_addr = (seq and 0xc8 or 0xc0, local_net, frame[0])
-    dst_addr = (seq and 0xc8 or 0xc0, local_net, frame[1])
+    src_addr = ((seq and 0xc8 or 0xc0) | user_flag, local_net, frame[0])
+    dst_addr = ((seq and 0xc8 or 0xc0) | user_flag, local_net, frame[1])
     remains = frame[3:]
     assert len(remains) == frame[2]
     remains = remains[1:] # skip hdr
@@ -65,5 +65,5 @@ def from_frame(frame, local_net=0):
     dat = remains
     src = ':'.join('%02x' % x for x in src_addr)
     dst = ':'.join('%02x' % x for x in dst_addr)
-    return (src, None), (dst, None), dat, seq_val
+    return (src, None), (dst, None), dat, seq_val, frag
 

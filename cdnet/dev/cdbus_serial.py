@@ -23,7 +23,7 @@ def to_hexstr(data):
     return ' '.join('%02x' % b for b in data)
 
 
-class CdbusSerial(threading.Thread):
+class CDBusSerial(threading.Thread):
     def __init__(self, name='cdbus_serial', rx_queue_size=100,
                        dev_filters=None, dev_port=None, baud=115200, dev_timeout=0.5,
                        local_filter=[0xaa], remote_filter=[0x55]):
@@ -108,9 +108,12 @@ class CdbusSerial(threading.Thread):
         self.alive = False
         self.join()
     
-    def tx(self, frame):
+    def send(self, frame):
         self.logger.log(logging.VERBOSE, '<- ' + to_hexstr(frame))
         assert len(frame) == frame[2] + 3
         frame += modbus_crc(frame).to_bytes(2, byteorder='little')
         self.com.write(frame)
+    
+    def recv(self, timeout=None):
+        return self.rx_queue.get()
 
