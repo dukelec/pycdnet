@@ -47,102 +47,118 @@ def _cal_port_val(src, dst):
     if (src_size, dst_size) == (2, 2): return (0x07, src_size, dst_size)
 
 
-def to_frame(pkt, _=None):
-    assert pkt.level == CDNET_L1
+def to_frame(src, dst, dat, seq_val=None):
+    src_addr = list(map(lambda x: x and int(x, 16) or 0, src[0].split(':')))
+    dst_addr = list(map(lambda x: x and int(x, 16) or 0, dst[0].split(':')))
+    src_port = src[1]
+    dst_port = dst[1]
     
-    hdr = HDR_L1_L2 | (pkt.multi << 4)
+    assert (dst_addr[0] & 0xc0) == 0x80 and (dst_addr[0] & 7) == 0
+    
+    multi = (dst_addr[0] >> 4) & 3
+    
+    hdr = HDR_L1_L2 | (multi << 4)
     payload = b''
     
-    if pkt.multi == CDNET_MULTI_CAST:
-        payload += pkt.multicast_id.to_bytes(2, 'little')
-    elif pkt.multi == CDNET_MULTI_NET:
-        payload += bytes([pkt.src_addr.net])
-        payload += bytes([pkt.src_addr.mac])
-        payload += bytes([pkt.dst_addr.net])
-        payload += bytes([pkt.dst_addr.mac])
-    elif pkt.multi == CDNET_MULTI_CAST_NET:
-        payload += bytes([pkt.src_addr.net])
-        payload += bytes([pkt.src_addr.mac])
-        payload += pkt.multicast_id.to_bytes(2, 'little')
+    src_mac = src_addr[2]
     
-    if pkt.seq:
+    if multi == CDNET_MULTI_CAST:
+        payload += dst_addr[1].to_bytes(2, 'little')
+        dst_mac = dst_addr[1] & 0xff
+    elif multi == CDNET_MULTI_NET:
+        payload += bytes([src_addr[1]])
+        payload += bytes([src_addr[2]])
+        payload += bytes([dst_addr[1]])
+        payload += bytes([dst_addr[2]])
+        dst_mac = cdnet_get_router(dst) # TODO: implement this function
+    elif multi == CDNET_MULTI_CAST_NET:
+        payload += bytes([src_addr[1]])
+        payload += bytes([src_addr[2]])
+        payload += dst_addr[1].to_bytes(2, 'little')
+        dst_mac = dst_addr[1] & 0xff # TODO: set to 255 if remote hw filter not enough
+    else:
+        dst_mac = dst_addr[2]
+    
+    if dst_addr[0] & 8:
         hdr |= HDR_L1_L2_SEQ
-        payload += bytes([pkt._seq_num | (pkt._req_ack << 7)])
+        payload += bytes([seq_val])
     
-    print("{} {}".format(pkt.src_port, pkt.dst_port))
-    port_size_val, src_port_size, dst_port_size = _cal_port_val(pkt.src_port, pkt.dst_port)
+    port_size_val, src_port_size, dst_port_size = _cal_port_val(src_port, dst_port)
     hdr |= port_size_val
     
     if src_port_size == 1:
-        payload += bytes([pkt.src_port])
+        payload += bytes([src_port])
     elif src_port_size == 2:
-        payload += pkt.src_port.to_bytes(2, 'little')
+        payload += src_port.to_bytes(2, 'little')
     if dst_port_size == 1:
-        payload += bytes([pkt.dst_port])
+        payload += bytes([dst_port])
     elif dst_port_size == 2:
-        payload += pkt.dst_port.to_bytes(2, 'little')
+        payload += dst_port.to_bytes(2, 'little')
     
-    payload += pkt.dat
-    frame = bytes([pkt.src_mac]) + bytes([pkt.dst_mac]) + bytes([len(payload)+1]) + bytes([hdr]) + payload
+    payload += dat
+    frame = bytes([src_mac]) + bytes([dst_mac]) + bytes([len(payload)+1]) + bytes([hdr]) + payload
     assert len(frame) <= 256
     return frame
 
 
-def from_frame(frame, _=None):
+def from_frame(frame, local_net=0):
     hdr = frame[3]
     assert (hdr & 0xc0) == 0x80
     
-    pkt = CDNetPacket(CDNET_L1)
-    
-    pkt.src_mac = frame[0]
-    pkt.dst_mac = frame[1]
+    src_mac = frame[0]
+    dst_mac = frame[1]
     remains = frame[3:]
     assert len(remains) == frame[2]
     
     remains = remains[1:] # skip hdr
     
-    pkt.seq = bool(hdr & HDR_L1_L2_SEQ)
-    pkt.multi = (hdr >> 4) & 3
+    seq = bool(hdr & HDR_L1_L2_SEQ)
+    seq_val = None
+    multi = (hdr >> 4) & 3
     
-    if pkt.multi == CDNET_MULTI_CAST:
-        pkt.multicast_id = _struct.unpack("<H", remains[:2])[0]
+    if multi == CDNET_MULTI_CAST:
+        src_addr = (seq and 0x88 or 0x80, local_net, src_mac)
+        m_id = _struct.unpack("<H", remains[:2])[0]
+        dst_addr = (seq and 0x98 or 0x90, m_id)
         remains = remains[2:]
-    elif pkt.multi == CDNET_MULTI_NET:
-        pkt.src_addr.net = remains[0]
-        pkt.src_addr.mac = remains[1]
-        pkt.dst_addr.net = remains[2]
-        pkt.dst_addr.mac = remains[3]
+    elif multi == CDNET_MULTI_NET:
+        src_addr = (seq and 0xa8 or 0xa0, remains[0], remains[1])
+        dst_addr = (seq and 0xa8 or 0xa0, remains[2], remains[3])
         remains = remains[4:]
-    elif pkt.multi == CDNET_MULTI_CAST_NET:
-        pkt.src_addr.net = remains[0]
-        pkt.src_addr.mac = remains[1]
-        pkt.multicast_id = _struct.unpack("<H", remains[2:4])[0]
+    elif multi == CDNET_MULTI_CAST_NET:
+        src_addr = (seq and 0xa8 or 0xa0, remains[0], remains[1])
+        m_id = _struct.unpack("<H", remains[2:4])[0]
+        dst_addr = (seq and 0xb8 or 0xb0, m_id)
         remains = remains[4:]
+    else:
+        src_addr = (seq and 0x88 or 0x80, local_net, src_mac)
+        dst_addr = (seq and 0x88 or 0x80, local_net, dst_mac)
     
-    if pkt.seq:
-        pkt._seq_num = remains[0] & 0x7f
-        pkt._req_ack = bool(remains[0] & 0x80)
+    if seq:
+        seq_val = remains[0]
         remains = remains[1:]
     
     src_port_size, dst_port_size = _get_port_size(hdr & 0x07)
     
     if src_port_size == 0:
-        pkt.src_port = CDNET_DEF_PORT
+        src_port = CDNET_DEF_PORT
     elif src_port_size == 1:
-        pkt.src_port = remains[0]
+        src_port = remains[0]
         remains = remains[1:]
     elif src_port_size == 2:
-        pkt.src_port = _struct.unpack("<H", remains[:2])[0]
+        src_port = _struct.unpack("<H", remains[:2])[0]
         remains = remains[2:]
     if dst_port_size == 0:
-        pkt.dst_port = CDNET_DEF_PORT
+        dst_port = CDNET_DEF_PORT
     elif dst_port_size == 1:
-        pkt.dst_port = remains[0]
+        dst_port = remains[0]
         remains = remains[1:]
     elif dst_port_size == 2:
-        pkt.dst_port = _struct.unpack("<H", remains[:2])[0]
+        dst_port = _struct.unpack("<H", remains[:2])[0]
         remains = remains[2:]
     
-    pkt.dat = remains
-    return pkt
+    dat = remains
+    src = ':'.join('%02x' % x for x in src_addr)
+    dst = ':'.join('%02x' % x for x in dst_addr)
+    return (src, src_port), (dst, dst_port), dat, seq_val
 
