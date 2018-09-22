@@ -11,10 +11,6 @@ import os as _os
 
 CDNET_DEF_PORT = int(_os.environ['CDNET_DEF_PORT'], 0) if 'CDNET_DEF_PORT' in _os.environ else 0xcdcd
 
-# ephemeral port start
-CDNET_LOCAL_PORT = int(_os.environ['CDNET_LOCAL_PORT'], 0) if 'CDNET_LOCAL_PORT' in _os.environ else 32768
-
-
 CDNET_L0 = 0
 CDNET_L1 = 1
 CDNET_L2 = 2

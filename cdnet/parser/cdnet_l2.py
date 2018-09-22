@@ -11,8 +11,8 @@ from .cdnet_def import *
 
 
 def to_frame(src, dst, dat, max_size=253, seq_val=None, pos=0):
-    src_addr = list(map(lambda x: x and int(x, 16) or 0, src[0].split(':')))
-    dst_addr = list(map(lambda x: x and int(x, 16) or 0, dst[0].split(':')))
+    src_addr = list(map(lambda x: x and int(x, 16) or 0, src.split(':')))
+    dst_addr = list(map(lambda x: x and int(x, 16) or 0, dst.split(':')))
     assert dst_addr[0] == 0xc0 or dst_addr[0] == 0xc8
     user_flag = dst_addr[0] & 7
     seq = bool(dst_addr[0] & 8)
@@ -65,5 +65,5 @@ def from_frame(frame, local_net=0):
     dat = remains
     src = ':'.join('%02x' % x for x in src_addr)
     dst = ':'.join('%02x' % x for x in dst_addr)
-    return (src, None), (dst, None), dat, seq_val, frag
+    return src, dst, dat, seq_val, frag
 

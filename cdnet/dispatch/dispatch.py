@@ -89,7 +89,7 @@ class CDNetIntf(threading.Thread):
     
     def sendto(self, src, dst, data):
         # only support level1 at now
-        frame = cdnet_l1.to_frame(src, dst, data)
+        frame = cdnet_l1.to_frame(src, dst, data, self.mac)
         self.dev.send(frame)
 
 

@@ -47,7 +47,7 @@ def _cal_port_val(src, dst):
     if (src_size, dst_size) == (2, 2): return (0x07, src_size, dst_size)
 
 
-def to_frame(src, dst, dat, seq_val=None):
+def to_frame(src, dst, dat, src_mac, seq_val=None):
     src_addr = list(map(lambda x: x and int(x, 16) or 0, src[0].split(':')))
     dst_addr = list(map(lambda x: x and int(x, 16) or 0, dst[0].split(':')))
     src_port = src[1]
@@ -60,10 +60,9 @@ def to_frame(src, dst, dat, seq_val=None):
     hdr = HDR_L1_L2 | (multi << 4)
     payload = b''
     
-    src_mac = src_addr[2]
-    
     if multi == CDNET_MULTI_CAST:
         payload += dst_addr[1].to_bytes(2, 'little')
+        assert src_addr[2] == src_mac
         dst_mac = dst_addr[1] & 0xff
     elif multi == CDNET_MULTI_NET:
         payload += bytes([src_addr[1]])
@@ -77,6 +76,7 @@ def to_frame(src, dst, dat, seq_val=None):
         payload += dst_addr[1].to_bytes(2, 'little')
         dst_mac = dst_addr[1] & 0xff # TODO: set to 255 if remote hw filter not enough
     else:
+        assert src_addr[2] == src_mac
         dst_mac = dst_addr[2]
     
     if dst_addr[0] & 8:
