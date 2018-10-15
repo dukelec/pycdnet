@@ -10,11 +10,11 @@
 from .cdnet_def import *
 
 
-def to_frame(src, dst, dat, max_size=253, seq_val=None, pos=0):
+def to_frame(src, dst, dat, user_flag=0, max_size=253, seq_val=None, pos=0):
     src_addr = list(map(lambda x: x and int(x, 16) or 0, src.split(':')))
     dst_addr = list(map(lambda x: x and int(x, 16) or 0, dst.split(':')))
     assert dst_addr[0] == 0xc0 or dst_addr[0] == 0xc8
-    user_flag = dst_addr[0] & 7
+    assert (user_flag & ~7) == 0
     seq = bool(dst_addr[0] & 8)
     payload_max = seq and max_size-1 or max_size
     
@@ -46,8 +46,8 @@ def from_frame(frame, local_net=0):
     seq_val = None
     user_flag = hdr & 7
     
-    src_addr = ((seq and 0xc8 or 0xc0) | user_flag, local_net, frame[0])
-    dst_addr = ((seq and 0xc8 or 0xc0) | user_flag, local_net, frame[1])
+    src_addr = (seq and 0xc8 or 0xc0, local_net, frame[0])
+    dst_addr = (seq and 0xc8 or 0xc0, local_net, frame[1])
     remains = frame[3:]
     assert len(remains) == frame[2]
     remains = remains[1:] # skip hdr
@@ -65,5 +65,5 @@ def from_frame(frame, local_net=0):
     dat = remains
     src = ':'.join('%02x' % x for x in src_addr)
     dst = ':'.join('%02x' % x for x in dst_addr)
-    return src, dst, dat, seq_val, frag
+    return src, dst, dat, user_flag, seq_val, frag
 

@@ -10,6 +10,8 @@
 import os as _os
 
 CDNET_DEF_PORT = int(_os.environ['CDNET_DEF_PORT'], 0) if 'CDNET_DEF_PORT' in _os.environ else 0xcdcd
+L0_SHARE_MASK = 0xe0
+L0_SHARE_LEFT = 0x80
 
 CDNET_L0 = 0
 CDNET_L1 = 1
