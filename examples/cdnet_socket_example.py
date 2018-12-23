@@ -22,11 +22,8 @@ logger_init(logging.VERBOSE)
 
 
 dev = CDBusSerial(dev_port='/dev/ttyUSB0')
-intf = CDNetIntf(dev, net=0, mac=0xaa)
-cdnet_intfs[0] = intf
-
-sock = CDNetSocket()
-sock.bind(('', 0xcdcd))
+CDNetIntf(dev, net=0, mac=0xaa)
+sock = CDNetSocket(('', 0xcdcd))
 
 sock.sendto(b'', ('80:00:55', 1)) # level1, target: mac 55, port 1
 

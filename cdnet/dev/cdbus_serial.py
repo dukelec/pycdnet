@@ -24,11 +24,11 @@ def to_hexstr(data):
 
 
 class CDBusSerial(threading.Thread):
-    def __init__(self, name='cdbus_serial', rx_queue_size=100,
+    def __init__(self, name='cdbus_serial',
                        dev_filters=None, dev_port=None, baud=115200, dev_timeout=0.5,
                        local_filter=[0xaa], remote_filter=[0x55]):
         
-        self.rx_queue = queue.Queue(rx_queue_size)
+        self.rx_queue = queue.Queue()
         
         self.local_filter = local_filter
         self.remote_filter = remote_filter
@@ -115,5 +115,5 @@ class CDBusSerial(threading.Thread):
         self.com.write(frame)
     
     def recv(self, timeout=None):
-        return self.rx_queue.get()
+        return self.rx_queue.get(timeout=timeout)
 

@@ -19,13 +19,16 @@ SEQ_TX_RETRY_MAX = 3
 _SEQ_TX_PEND_MAX = 6
 _SEQ_TIMEOUT = 0.5
 
-
 # TODO:
 #   add router and default_router
 #   add multicast registry
 
-cdnet_intfs = {}    # key: net id
-cdnet_sockets = {}  # key: port num
+class CDNetNS(): # Namespace
+    def __init__(self):
+        self.intfs = {}     # key: net id
+        self.sockets = {}   # key: port num
+
+cdnet_def_ns = CDNetNS()
 
 
 class CDNetNode(threading.Thread):
@@ -58,14 +61,18 @@ class CDNetNode(threading.Thread):
 
 
 class CDNetIntf(threading.Thread):
-    def __init__(self, dev, net=0, mac=0):
+    def __init__(self, dev, net=0, mac=0, ns=cdnet_def_ns):
         self.dev = dev
         self.net = net
         self.mac = mac
+        self.ns = ns
         self.logger = logging.getLogger('CDNetIntf {:02x}'.format(net))
         
         # self.multi = {} # SEQ multicast/broadcast address list
         self.nodes = {} # remote device object
+        
+        assert net not in self.ns.intfs
+        self.ns.intfs[net] = self
         
         threading.Thread.__init__(self)
         self.daemon = True
@@ -77,10 +84,10 @@ class CDNetIntf(threading.Thread):
             frame = self.dev.recv()
             src, dst, dat, seq_val = cdnet_l1.from_frame(frame, self.net)
             # TODO: check dst addr
-            if dst[1] not in cdnet_sockets:
+            if dst[1] not in self.ns.sockets:
                 self.logger.warn('port %d not found, drop' % dst[1])
             else:
-                sock = cdnet_sockets[dst[1]]
+                sock = self.ns.sockets[dst[1]]
                 sock.recv_q.put((dat, src))
     
     def stop(self):
@@ -94,22 +101,23 @@ class CDNetIntf(threading.Thread):
 
 
 class CDNetSocket():
-    def __init__(self):
+    def __init__(self, addr, ns=cdnet_def_ns):
+        self.ns = ns
         self.port = None
         self.recv_q = Queue()
-    
-    def bind(self, addr):
+        
+        # bind addr
         assert len(addr) == 2
         assert addr[0] == '' # only allow all address at now
         assert addr[1] in range(1, 0x10000)
         self.port = addr[1]
-        assert self.port not in cdnet_sockets
-        cdnet_sockets[self.port] = self
+        assert self.port not in self.ns.sockets
+        self.ns.sockets[self.port] = self
     
     def sendto(self, data, addr):
         dst_addr = list(map(lambda x: x and int(x, 16) or 0, addr[0].split(':')))
         assert dst_addr[0] == 0x80 # only support basic level1 at now
-        intf = cdnet_intfs[dst_addr[1]]
+        intf = self.ns.intfs[dst_addr[1]]
         src_addr = (dst_addr[0], dst_addr[1], intf.mac)
         src = ':'.join('%02x' % x for x in src_addr)
         return intf.sendto((src, self.port), addr, data)

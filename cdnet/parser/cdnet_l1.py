@@ -30,7 +30,7 @@ def _cal_port_val(src, dst):
     else:
         src_size = 2
     
-    if dst == CDNET_DEF_PORT:
+    if dst == CDNET_DEF_PORT and src != CDNET_DEF_PORT:
         dst_size = 0
     elif dst <= 0xff:
         dst_size = 1
