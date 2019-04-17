@@ -26,12 +26,14 @@ def to_hexstr(data):
 class CDBusSerial(threading.Thread):
     def __init__(self, name='cdbus_serial',
                        dev_filters=None, dev_port=None, baud=115200, dev_timeout=0.5,
-                       local_filter=[0xaa], remote_filter=[0x55]):
+                       local_filter=[0xaa], remote_filter=[0x55], has_echo=False):
         
         self.rx_queue = queue.Queue()
         
         self.local_filter = local_filter
         self.remote_filter = remote_filter
+        self.has_echo = has_echo
+        self.echo_dat = None
         
         self.rx_bytes = b''
         self.logger = logging.getLogger(name)
@@ -60,6 +62,11 @@ class CDBusSerial(threading.Thread):
             
             rx_dat = bchar + self.com.read_all()
             #self.logger.log(logging.VERBOSE, '>>> ' + to_hexstr(in_dat))
+            
+            if self.echo_dat:
+                if (rx_dat.find(self.echo_dat) == 0):
+                    rx_dat = rx_dat[len(self.echo_dat):]
+                self.echo_dat = None
             
             while len(rx_dat):
                 if len(self.rx_bytes) == 0:
@@ -112,6 +119,8 @@ class CDBusSerial(threading.Thread):
         self.logger.log(logging.VERBOSE, '<- ' + to_hexstr(frame))
         assert len(frame) == frame[2] + 3
         frame += modbus_crc(frame).to_bytes(2, byteorder='little')
+        if self.has_echo:
+            self.echo_dat = frame
         self.com.write(frame)
     
     def recv(self, timeout=None):
