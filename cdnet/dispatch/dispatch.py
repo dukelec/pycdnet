@@ -9,7 +9,7 @@
 
 
 import threading
-from queue import Queue
+from queue import Queue, Empty
 from ..utils.log import *
 from ..parser import *
 
@@ -123,5 +123,8 @@ class CDNetSocket():
         return intf.sendto((src, self.port), addr, data)
     
     def recvfrom(self, timeout=None):
-        return self.recv_q.get(timeout=timeout)
+        try:
+            return self.recv_q.get(timeout=timeout)
+        except Empty:
+            return None, None
 

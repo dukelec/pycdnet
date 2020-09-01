@@ -158,7 +158,7 @@ def from_frame(frame, local_net=0):
         remains = remains[2:]
     
     dat = remains
-    src = ':'.join('%02x' % x for x in src_addr)
-    dst = ':'.join('%02x' % x for x in dst_addr)
+    src = bytes(src_addr).hex(':')
+    dst = bytes(dst_addr).hex(':')
     return (src, src_port), (dst, dst_port), dat, seq_val
 

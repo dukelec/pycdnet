@@ -19,9 +19,6 @@ from ..utils.log import *
 def modbus_crc(frame):
     return CRC16(modbus_flag=True).calculate(frame)
 
-def to_hexstr(data):
-    return ' '.join('%02x' % b for b in data)
-
 
 class CDBusSerial(threading.Thread):
     def __init__(self, name='cdbus_serial',
@@ -56,12 +53,12 @@ class CDBusSerial(threading.Thread):
             bchar = self.com.read()
             if len(bchar) == 0:
                 if len(self.rx_bytes) != 0:
-                    self.logger.warning('timeout drop: ' + to_hexstr(self.rx_bytes))
+                    self.logger.warning('timeout drop: ' + self.rx_bytes.hex(' '))
                     self.rx_bytes = b''
                 continue
             
             rx_dat = bchar + self.com.read_all()
-            #self.logger.log(logging.VERBOSE, '>>> ' + to_hexstr(in_dat))
+            #self.logger.log(logging.VERBOSE, '>>> ' + in_dat.hex(' '))
             
             if self.echo_dat:
                 if (rx_dat.find(self.echo_dat) == 0):
@@ -98,16 +95,16 @@ class CDBusSerial(threading.Thread):
                 
                 if len(self.rx_bytes) == self.rx_bytes[2] + 5:
                     if modbus_crc(self.rx_bytes) != 0:
-                        self.logger.debug('crc error: ' + to_hexstr(self.rx_bytes))
+                        self.logger.debug('crc error: ' + self.rx_bytes.hex(' '))
                         self.rx_bytes = b''
                         break
                     else:
-                        self.logger.log(logging.VERBOSE, '-> ' + to_hexstr(self.rx_bytes[:-2]))
+                        self.logger.log(logging.VERBOSE, '-> ' + self.rx_bytes[:-2].hex(' '))
                         self.rx_queue.put(self.rx_bytes[:-2])
                         self.rx_bytes = b''
             
             if len(rx_dat):
-                self.logger.debug('drop left: ' + to_hexstr(rx_dat))
+                self.logger.debug('drop left: ' + rx_dat.hex(' '))
         
         self.com.close()
     
@@ -116,7 +113,7 @@ class CDBusSerial(threading.Thread):
         self.join()
     
     def send(self, frame):
-        self.logger.log(logging.VERBOSE, '<- ' + to_hexstr(frame))
+        self.logger.log(logging.VERBOSE, '<- ' + frame.hex(' '))
         assert len(frame) == frame[2] + 3
         frame += modbus_crc(frame).to_bytes(2, byteorder='little')
         if self.has_echo:
