@@ -4,20 +4,20 @@
 # Copyright (c) 2017, DUKELEC, Inc.
 # All rights reserved.
 #
-# Author: Duke Fong <duke@dukelec.com>
+# Author: Duke Fong <d@d-l.io>
 #
 
-# CDNET address string format:
-#
-#              local link     unique local    local and cross net multicast
-# level0:       00:NN:MM
-# level1:       80:NN:MM        a0:NN:MM     90:M_ID     b0:M_ID
-#  `-with seq:  88:NN:MM        a8:NN:MM     98:M_ID     b8:M_ID
-# level2:       c0:NN:MM
-#  `-with seq:  c8:NN:MM
-#
-# Notes:
-#   NN: net_id, MM: mac_addr, M_ID: multicast_id (include scope)
+# CDNET address format:
+ #
+ #              local link     unique local    multicast
+ # level0:       00:NN:MM
+ # level1:       80:NN:MM        a0:NN:MM       f0:MH:ML
+ #  `-with seq:  88:NN:MM        a8:NN:MM       f8:MH:ML
+ # level2:       c0:NN:MM
+ #  `-with seq:  c8:NN:MM
+ #
+ # Notes:
+ #   NN: net_id, MM: mac_addr, MH+ML: multicast_id
 
 from .cdnet_def import *
 from . import cdnet_l0

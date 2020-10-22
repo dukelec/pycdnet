@@ -49,16 +49,18 @@ class CDBusBridge(threading.Thread):
         self.start()
         
         self.logger.debug('read info ...')
-        self.sock.sendto(b'\x40', ('80:00:55', 1))
+        self.sock.sendto(b'\x00', ('80:00:55', 1))
         dat = self.sock.recvfrom()[0]
         self.logger.debug('info: {}'.format(dat[1:]))
         
+        '''
         self.sock.sendto(b'\x68\x00' + bytes([filter_]), ('80:00:55', 3))
         dat = self.sock.recvfrom()[0]
         if len(dat) == 1 and dat[0] == 0x80:
             self.logger.debug('set filter to %d successed' % filter_)
         else:
             self.logger.error('set filter to %d error' % filter_)
+        '''
     
     def run(self):
         while self.alive:
