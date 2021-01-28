@@ -4,7 +4,7 @@
 # Copyright (c) 2017, DUKELEC, Inc.
 # All rights reserved.
 #
-# Author: Duke Fong <duke@dukelec.com>
+# Author: Duke Fong <d@d-l.io>
 #
 
 
@@ -66,7 +66,7 @@ class CDNetIntf(threading.Thread):
         self.net = net
         self.mac = mac
         self.ns = ns
-        self.logger = logging.getLogger('CDNetIntf {:02x}'.format(net))
+        self.logger = logging.getLogger(f'cdnet.intf.0x{net:02x}')
         
         # self.multi = {} # SEQ multicast/broadcast address list
         self.nodes = {} # remote device object

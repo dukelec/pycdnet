@@ -4,7 +4,7 @@
 # Copyright (c) 2017, DUKELEC, Inc.
 # All rights reserved.
 #
-# Author: Duke Fong <duke@dukelec.com>
+# Author: Duke Fong <d@d-l.io>
 
 
 import sys, os
@@ -21,7 +21,7 @@ logger_init(logging.VERBOSE)
 #logger_init(logging.INFO)
 
 
-dev = CDBusSerial(dev_port='/dev/ttyUSB0')
+dev = CDBusSerial('/dev/ttyACM0') # dev path or filter string
 CDNetIntf(dev, net=0, mac=0xaa)
 sock = CDNetSocket(('', 0xcdcd))
 
