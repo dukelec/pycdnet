@@ -58,7 +58,7 @@ class CDBusBridge(threading.Thread):
     
     def send(self, frame): # add [aa 56]
         assert len(frame) == frame[2] + 3 and len(frame) <= 253
-        self.dev.send(b'\xaa\x56' + bytes([frame[2]+2]) + frame[0:2] + frame[3:])
+        return self.dev.send(b'\xaa\x56' + bytes([frame[2]+2]) + frame[0:2] + frame[3:])
     
     def recv(self, timeout=None):
         try:

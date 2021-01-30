@@ -68,6 +68,9 @@ class CDBusSerial(threading.Thread):
     def run(self):
         while self.alive:
             while not self._online:
+                if not self.alive:
+                    self.com.close()
+                    return
                 dev_port = get_port(self.port)
                 if dev_port:
                     self.com = serial.Serial(port=dev_port, baudrate=self.baud, timeout=self.timeout)
@@ -157,7 +160,12 @@ class CDBusSerial(threading.Thread):
         frame += modbus_crc(frame).to_bytes(2, byteorder='little')
         if self.echo:
             self.echo_dat = frame
-        self.com.write(frame)
+        try:
+            self.com.write(frame)
+            return None
+        except serial.serialutil.SerialException as err:
+            self.logger.warn(f'send: {err}')
+            return err
     
     def recv(self, timeout=None):
         try:
