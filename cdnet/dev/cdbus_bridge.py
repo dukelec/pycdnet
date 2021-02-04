@@ -34,6 +34,7 @@ class CDBusBridge(threading.Thread):
             self.logger.debug(f'info: {dat[6:]}')
         except queue.Empty:
             self.logger.debug('info: no response')
+        self.rx_queue_55 = None
     
     @property
     def online(self):
@@ -49,7 +50,10 @@ class CDBusBridge(threading.Thread):
             if frame and frame[0] == 0x56:
                 self.rx_queue.put(frame[3:5] + bytes([frame[2]-2]) + frame[5:])
             elif frame and frame[0] == 0x55:
-                self.rx_queue_55.put(frame)
+                if self.rx_queue_55:
+                    self.rx_queue_55.put(frame)
+                else:
+                    self.logger.debug(f'{frame[6:]}') # debug messages
     
     def stop(self):
         self.alive = False
