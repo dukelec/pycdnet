@@ -12,6 +12,6 @@ import logging
 logging.VERBOSE = 5
 
 def logger_init(level=logging.INFO):
-    logging.basicConfig(format='%(name)s: %(levelname)s: %(message)s', level=level)
+    logging.basicConfig(format='%(created).3f %(name)s: %(levelname)s: %(message)s', level=level)
     logging.addLevelName(logging.VERBOSE, 'VERBOSE')
 
