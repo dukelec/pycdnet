@@ -85,7 +85,7 @@ class CDNetIntf(threading.Thread):
             src, dst, dat, seq_val = cdnet_l1.from_frame(frame, self.net)
             # TODO: check dst addr
             if dst[1] not in self.ns.sockets:
-                self.logger.warn('port %d not found, drop' % dst[1])
+                self.logger.warning('port %d not found, drop' % dst[1])
             else:
                 sock = self.ns.sockets[dst[1]]
                 sock.recv_q.put((dat, src))

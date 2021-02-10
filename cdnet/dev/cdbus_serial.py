@@ -78,7 +78,7 @@ class CDBusSerial(threading.Thread):
                         self._online = True
                         self.logger.info(f're-connected: {self.port} ({dev_port})')
                         break
-                self.logger.warn(f'retry connect: {self.port} ...')
+                self.logger.warning(f'retry connect: {self.port} ...')
                 sleep(1)
             
             try:
@@ -140,8 +140,8 @@ class CDBusSerial(threading.Thread):
             
             except serial.serialutil.SerialException as err:
                 self._online = False
-                self.logger.warn(f'{err}')
-                self.logger.warn(f're-open: {self.port} ...')
+                self.logger.warning(f'{err}')
+                self.logger.warning(f're-open: {self.port} ...')
                 self.com.close()
                 self.echo_dat = None
                 self.rx_bytes = b''
@@ -164,7 +164,7 @@ class CDBusSerial(threading.Thread):
             self.com.write(frame)
             return None
         except serial.serialutil.SerialException as err:
-            self.logger.warn(f'send: {err}')
+            self.logger.warning(f'send: {err}')
             return err
     
     def recv(self, timeout=None):
