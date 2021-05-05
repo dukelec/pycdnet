@@ -20,7 +20,7 @@ class CDBusBridge(threading.Thread):
         self.logger = logging.getLogger(name)
         
         self.timeout = timeout
-        self.dev = CDBusSerial(port, baud=baud, timeout=timeout, remote_filter=[0x55, 0x56])
+        self.dev = CDBusSerial(port, baud=baud, timeout=timeout, local_filter=[0xaa], remote_filter=[0x55, 0x56])
 
         threading.Thread.__init__(self)
         self.daemon = True

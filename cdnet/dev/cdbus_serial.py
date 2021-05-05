@@ -23,7 +23,7 @@ def modbus_crc(frame):
 
 class CDBusSerial(threading.Thread):
     def __init__(self, port, baud=115200, timeout=0.5, echo=False,
-                       local_filter=[0xaa], remote_filter=[0x55], name='cdnet.dev.serial'):
+                       local_filter=[], remote_filter=[], name='cdnet.dev.serial'):
         '''
         port: dev path or filter string
         '''
@@ -100,7 +100,7 @@ class CDBusSerial(threading.Thread):
                 while len(rx_dat):
                     if len(self.rx_bytes) == 0:
                         self.rx_bytes, rx_dat = rx_dat[:1], rx_dat[1:]
-                        if self.rx_bytes[0] not in self.remote_filter:
+                        if len(self.remote_filter) and (self.rx_bytes[0] not in self.remote_filter):
                             self.logger.debug('byte0 filtered: %02x' % self.rx_bytes[0])
                             self.rx_bytes = b''
                             break
@@ -110,7 +110,7 @@ class CDBusSerial(threading.Thread):
                     if len(self.rx_bytes) == 1:
                         self.rx_bytes += rx_dat[:1]
                         rx_dat = rx_dat[1:]
-                        if self.rx_bytes[1] not in self.local_filter:
+                        if len(self.local_filter) and (self.rx_bytes[1] not in self.local_filter):
                             self.logger.debug('byte1 filtered: %02x' % self.rx_bytes[1])
                             self.rx_bytes = b''
                             break
