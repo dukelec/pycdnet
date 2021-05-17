@@ -44,9 +44,7 @@ class CDBusSerial(threading.Thread):
         
         dev_port = get_port(port)
         if not dev_port:
-            self.logger.error(f'device not exist, available devices:')
-            dump_ports(name)
-            raise Exception('device not exist')
+            dev_port = port # try hidden port
         self.com = serial.Serial(port=dev_port, baudrate=baud, timeout=timeout)
         if not self.com.isOpen():
             raise Exception('serial open failed')
