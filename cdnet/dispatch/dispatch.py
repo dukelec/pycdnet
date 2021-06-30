@@ -127,4 +127,8 @@ class CDNetSocket():
             return self.recv_q.get(timeout=timeout)
         except Empty:
             return None, None
+    
+    def clear(self):
+        with self.recv_q.mutex:
+            self.recv_q.queue.clear()
 
