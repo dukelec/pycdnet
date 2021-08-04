@@ -9,6 +9,7 @@
 
 import logging
 from serial.tools import list_ports
+from fnmatch import fnmatch
 
 
 def dump_ports(name='cdnet.dump_ports'):
@@ -25,7 +26,7 @@ def get_ports():
 def get_port(port, unique=False):
     # port: dev path or filter string
     ports = get_ports()
-    left = [p for p in ports if port in p]
+    left = [p for p in ports if fnmatch(p, '*'+port+'*')]
     if len(left) == 0 or (unique and len(left) > 1):
         return None
     return left[0].split(' - ')[0]
