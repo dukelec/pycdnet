@@ -149,7 +149,6 @@ class CDBusSerial(threading.Thread):
     
     def stop(self):
         self.alive = False
-        self.com.close()
         self.join()
     
     def send(self, frame):
