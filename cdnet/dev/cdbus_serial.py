@@ -45,7 +45,7 @@ class CDBusSerial(threading.Thread):
         dev_port = get_port(port)
         if not dev_port:
             dev_port = port # try hidden port
-        self.com = serial.Serial(port=dev_port, baudrate=baud, timeout=timeout)
+        self.com = serial.Serial(port=dev_port, baudrate=baud, timeout=timeout, exclusive=True)
         if not self.com.isOpen():
             raise Exception('serial open failed')
         
@@ -71,7 +71,7 @@ class CDBusSerial(threading.Thread):
                     return
                 dev_port = get_port(self.port)
                 if dev_port:
-                    self.com = serial.Serial(port=dev_port, baudrate=self.baud, timeout=self.timeout)
+                    self.com = serial.Serial(port=dev_port, baudrate=self.baud, timeout=self.timeout, exclusive=True)
                     if self.com.isOpen():
                         self._online = True
                         self.logger.info(f're-connected: {self.port} ({dev_port})')
