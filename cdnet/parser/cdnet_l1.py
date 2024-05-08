@@ -13,14 +13,9 @@ from .cdnet_def import *
 
 def _get_port_size(val):
     if val == 0x00: return (0, 1)
-    if val == 0x01: return (0, 2)
     if val == 0x02: return (1, 0)
-    if val == 0x03: return (2, 0)
     if val == 0x04: return (1, 1)
-    if val == 0x05: return (1, 2)
-    if val == 0x06: return (2, 1)
-    if val == 0x07: return (2, 2)
-    raise ValueError("cdnet port field error")
+    return (2, 2)
 
 def _cal_port_val(src, dst):
     if src == CDN_DEF_PORT:
@@ -38,13 +33,9 @@ def _cal_port_val(src, dst):
         dst_size = 2
 
     if (src_size, dst_size) == (0, 1): return (0x00, src_size, dst_size)
-    if (src_size, dst_size) == (0, 2): return (0x01, src_size, dst_size)
     if (src_size, dst_size) == (1, 0): return (0x02, src_size, dst_size)
-    if (src_size, dst_size) == (2, 0): return (0x03, src_size, dst_size)
     if (src_size, dst_size) == (1, 1): return (0x04, src_size, dst_size)
-    if (src_size, dst_size) == (1, 2): return (0x05, src_size, dst_size)
-    if (src_size, dst_size) == (2, 1): return (0x06, src_size, dst_size)
-    if (src_size, dst_size) == (2, 2): return (0x07, src_size, dst_size)
+    return (0x06, 2, 2)
 
 
 
@@ -117,7 +108,7 @@ def from_payload(payload, src_mac, dst_mac, local_net=0):
     else:
         dst_addr = (0x80, local_net, dst_mac)
 
-    src_port_size, dst_port_size = _get_port_size(hdr & 0x07)
+    src_port_size, dst_port_size = _get_port_size(hdr & 0x06)
 
     if src_port_size == 0:
         src_port = CDN_DEF_PORT
