@@ -48,7 +48,7 @@ def from_payload(payload, src_mac, dst_mac, local_net=0, last_port=None):
         assert last_port != None
         src_port = last_port
         dst_port = CDN_DEF_PORT
-        dat = bytes([(remains[0] & 0x3f) | CDN0_SHARE_LEFT]) + remains[1:]
+        dat = bytes([(hdr & 0x3f) | CDN0_SHARE_LEFT]) + remains
     else:                       # in request
         src_port = CDN_DEF_PORT
         dst_port = hdr
