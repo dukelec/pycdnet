@@ -52,7 +52,7 @@ def from_payload(payload, src_mac, dst_mac, local_net=0, last_port=None):
     else:                       # in request
         src_port = CDN_DEF_PORT
         dst_port = hdr
-        dat = remains[1:]
+        dat = remains
 
     src = '00:{:02x}:{:02x}'.format(local_net, src_mac)
     dst = '00:{:02x}:{:02x}'.format(local_net, dst_mac)
