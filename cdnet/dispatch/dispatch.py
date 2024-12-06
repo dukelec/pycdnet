@@ -54,6 +54,7 @@ class CDNetIntf(threading.Thread):
         self.mac = mac
         self.ns = ns
         self.logger = logging.getLogger(f'cdnet.intf.0x{net:02x}')
+        self.l0_last_dst_port = None
 
         assert net not in self.ns.intfs
         self.ns.intfs[net] = self
@@ -66,7 +67,11 @@ class CDNetIntf(threading.Thread):
     def run(self):
         while self.alive:
             frame = self.dev.recv()
-            src, dst, dat = cdnet_l1.from_frame(frame, self.net)
+            if frame[3] & 0x80:
+                src, dst, dat = cdnet_l1.from_frame(frame, self.net)
+            else:
+                src, dst, dat = cdnet_l0.from_frame(frame, self.net, self.l0_last_dst_port)
+                self.l0_last_dst_port = None
             # TODO: check dst addr
             if dst[1] not in self.ns.sockets:
                 self.logger.warning('port %d not found, drop' % dst[1])
@@ -80,7 +85,11 @@ class CDNetIntf(threading.Thread):
 
     def sendto(self, src, dst, data):
         # only support level1 at now
-        frame = cdnet_l1.to_frame(src, dst, data, self.mac, int(dst[0].split(':')[2], 16))
+        if src[0].startswith('00:'):
+            frame = cdnet_l0.to_frame(src, dst, data)
+            self.l0_last_dst_port = dst[1]
+        else:
+            frame = cdnet_l1.to_frame(src, dst, data, self.mac, int(dst[0].split(':')[2], 16))
         self.dev.send(frame)
 
 
@@ -100,7 +109,6 @@ class CDNetSocket():
 
     def sendto(self, data, addr):
         dst_addr = list(map(lambda x: x and int(x, 16) or 0, addr[0].split(':')))
-        assert dst_addr[0] == 0x80 # only support basic level1 at now
         intf = self.ns.intfs[dst_addr[1]]
         src_addr = (dst_addr[0], dst_addr[1], intf.mac)
         src = ':'.join('%02x' % x for x in src_addr)
