@@ -71,7 +71,8 @@ class CDNetIntf(threading.Thread):
                 src, dst, dat = cdnet_l1.from_frame(frame, self.net)
             else:
                 src, dst, dat = cdnet_l0.from_frame(frame, self.net, self.l0_last_dst_port)
-                self.l0_last_dst_port = None
+                if dst[1] == CDN_DEF_PORT: # reply
+                    self.l0_last_dst_port = None
             # TODO: check dst addr
             if dst[1] not in self.ns.sockets:
                 self.logger.warning('port %d not found, drop' % dst[1])
@@ -87,7 +88,8 @@ class CDNetIntf(threading.Thread):
         # only support level1 at now
         if src[0].startswith('00:'):
             frame = cdnet_l0.to_frame(src, dst, data)
-            self.l0_last_dst_port = dst[1]
+            if src[1] == CDN_DEF_PORT: # request
+                self.l0_last_dst_port = dst[1]
         else:
             frame = cdnet_l1.to_frame(src, dst, data, self.mac, int(dst[0].split(':')[2], 16))
         self.dev.send(frame)
