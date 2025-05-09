@@ -71,11 +71,14 @@ class CDBusSerial(threading.Thread):
                     return
                 dev_port = get_port(self.port)
                 if dev_port:
-                    self.com = serial.Serial(port=dev_port, baudrate=self.baud, timeout=self.timeout, exclusive=True)
-                    if self.com.isOpen():
-                        self._online = True
-                        self.logger.info(f're-connected: {self.port} ({dev_port})')
-                        break
+                    try:
+                        self.com = serial.Serial(port=dev_port, baudrate=self.baud, timeout=self.timeout, exclusive=True)
+                        if self.com.isOpen():
+                            self._online = True
+                            self.logger.info(f're-connected: {self.port} ({dev_port})')
+                            break
+                    except serial.serialutil.SerialException as err:
+                        self.logger.warning(f'connect {self.port} err: {err}')
                 self.logger.warning(f'retry connect: {self.port} ...')
                 sleep(1)
             
