@@ -21,11 +21,11 @@ logger_init(logging.VERBOSE)
 #logger_init(logging.INFO)
 
 
-dev = CDBusSerial('/dev/ttyACM0') # dev path or filter string
-CDNetIntf(dev, net=0, mac=0xaa)
-sock = CDNetSocket(('', 0xcdcd))
+dev = CDBusSerial('/dev/ttyACM0', 115200) # dev path or filter string
+CDNetIntf(dev, net=0, mac=0x00)
+sock = CDNetSocket(('', 0x40)) # port 0x40
 
-sock.sendto(b'', ('80:00:55', 1)) # level1, target: mac 55, port 1
+sock.sendto(b'', ('00:00:ff', 1)) # level0, target: broadcast, port 1
 
 print('wait recv')
 rx = sock.recvfrom()

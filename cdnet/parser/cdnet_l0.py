@@ -13,19 +13,12 @@ from .cdnet_def import *
 def to_payload(src, dst, dat):
     src_port = src[1]
     dst_port = dst[1]
-    assert (src_port == CDN_DEF_PORT and dst_port <= 63) or \
-            dst_port == CDN_DEF_PORT
+    assert (src_port & 0xff80) == 0
+    assert (dst_port & 0xff80) == 0
 
-    if src_port == CDN_DEF_PORT:            # out request, backup dst port if need at outside
-        payload = bytes([dst_port]) + dat
-    else:                                   # out reply
-        assert len(dat) >= 1
-        assert (dat[0] & 0xc0) == CDN0_SHARE_LEFT
-        # share first byte
-        payload = bytes([(dat[0] & 0x3f) | CDN_HDR_L0_REPLY]) + dat[1:]
-
-    assert len(payload) <= 253
-    return payload
+    payload = bytes([src_port])
+    payload += bytes([dst_port])
+    return payload + dat
 
 
 def to_frame(src, dst, dat):
@@ -38,31 +31,23 @@ def to_frame(src, dst, dat):
 
 
 
-def from_payload(payload, src_mac, dst_mac, local_net=0, last_port=None):
-    hdr = payload[0]
-    assert not (hdr & 0x80)
+def from_payload(payload, src_mac, dst_mac, local_net=0):
+    assert (payload[0] & 0x80) == 0
+    assert (payload[1] & 0x80) == 0
 
-    remains = payload[1:] # skip hdr
-
-    if hdr & CDN_HDR_L0_REPLY:  # in reply
-        assert last_port != None
-        src_port = last_port
-        dst_port = CDN_DEF_PORT
-        dat = bytes([(hdr & 0x3f) | CDN0_SHARE_LEFT]) + remains
-    else:                       # in request
-        src_port = CDN_DEF_PORT
-        dst_port = hdr
-        dat = remains
+    src_port = payload[0]
+    dst_port = payload[1]
+    dat = payload[2:] # skip hdr
 
     src = '00:{:02x}:{:02x}'.format(local_net, src_mac)
     dst = '00:{:02x}:{:02x}'.format(local_net, dst_mac)
     return (src, src_port), (dst, dst_port), dat
 
 
-def from_frame(frame, local_net=0, last_port=None):
+def from_frame(frame, local_net=0):
     src_mac = frame[0]
     dst_mac = frame[1]
     assert len(frame) == frame[2] + 3
-    return from_payload(frame[3:], src_mac, dst_mac, local_net, last_port)
+    return from_payload(frame[3:], src_mac, dst_mac, local_net)
 
 
