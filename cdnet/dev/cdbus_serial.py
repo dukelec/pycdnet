@@ -33,6 +33,8 @@ class CDBusSerial(threading.Thread):
         self.port = port
         self.baud = baud
         self.timeout = timeout
+        self.com = None
+        self._online = False
         
         self.local_filter = local_filter
         self.remote_filter = remote_filter
@@ -45,13 +47,15 @@ class CDBusSerial(threading.Thread):
         dev_port = get_port(port)
         if not dev_port:
             dev_port = port # try hidden port
-        self.com = serial.Serial(port=dev_port, baudrate=baud, timeout=timeout, exclusive=True)
-        if not self.com.isOpen():
-            raise Exception('serial open failed')
+        try:
+            self.com = serial.Serial(port=dev_port, baudrate=baud, timeout=timeout, exclusive=True)
+            if self.com.isOpen():
+                self._online = True
+        except serial.serialutil.SerialException as err:
+            self.logger.warning(f'connect {self.port} err: {err}')
         
         threading.Thread.__init__(self)
         self.daemon = True
-        self._online = True
         self.alive = True
         self.start()
     
@@ -67,7 +71,8 @@ class CDBusSerial(threading.Thread):
         while self.alive:
             while not self._online:
                 if not self.alive:
-                    self.com.close()
+                    if self.com:
+                        self.com.close()
                     return
                 dev_port = get_port(self.port)
                 if dev_port:
@@ -80,7 +85,7 @@ class CDBusSerial(threading.Thread):
                     except serial.serialutil.SerialException as err:
                         self.logger.warning(f'connect {self.port} err: {err}')
                 self.logger.warning(f'retry connect: {self.port} ...')
-                sleep(1)
+                sleep(0.5)
             
             try:
                 bchar = self.com.read()
@@ -146,9 +151,10 @@ class CDBusSerial(threading.Thread):
                 self.com.close()
                 self.echo_dat = None
                 self.rx_bytes = b''
-                sleep(1)
+                sleep(0.5)
         
-        self.com.close()
+        if self.com:
+            self.com.close()
     
     def stop(self):
         self.alive = False
