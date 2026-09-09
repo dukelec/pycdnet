@@ -6,26 +6,24 @@
 #
 # Author: Duke Fong <d@d-l.io>
 
-# pip3 install pythoncrc
-from PyCRC.CRC16 import CRC16
-
 import threading
 import queue
 import serial
 from time import sleep
 from ..utils.serial_get_port import *
+from ..utils.crc import *
 from ..utils.log import *
 
 
-def modbus_crc(frame):
-    return CRC16(modbus_flag=True).calculate(frame)
-
-
 class CDBusSerial(threading.Thread):
-    def __init__(self, port, baud=115200, timeout=0.5, echo=False,
+    def __init__(self, port, baud=115200, timeout=0.05, echo=False,
                        local_filter=[], remote_filter=[], name='cdnet.dev.serial'):
         '''
         port: dev path or filter string
+        timeout: serial read timeout, also the silence after which an
+                 incomplete frame is dropped. Keep it above the usb-serial
+                 chip forwarding latency (16 ms on ftdi by default), or a
+                 valid frame split across usb packets would be dropped.
         '''
         
         self.rx_queue = queue.Queue()
