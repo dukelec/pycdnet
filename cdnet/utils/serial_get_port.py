@@ -26,6 +26,12 @@ def get_ports():
 def get_port(port, unique=False):
     # port: dev path or filter string
     ports = get_ports()
+    # a device path or name that matches exactly wins over the substring filter,
+    # or 'ttyS1' picks whichever of ttyS1, ttyS10 .. ttyS19 is listed first
+    for p in ports:
+        dev = p.split(' - ')[0]
+        if port in (dev, dev.split('/')[-1]):
+            return dev
     left = [p for p in ports if fnmatch(p, '*'+port+'*')]
     if len(left) == 0 or (unique and len(left) > 1):
         return None

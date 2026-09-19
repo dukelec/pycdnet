@@ -65,11 +65,17 @@ class CDNetIntf(threading.Thread):
 
     def run(self):
         while self.alive:
-            frame = self.dev.recv()
-            if frame[3] & 0x80:
-                src, dst, dat = cdnet_l1.from_frame(frame, self.net)
-            else:
-                src, dst, dat = cdnet_l0.from_frame(frame, self.net)
+            frame = self.dev.recv(timeout=0.5) # let stop() get through
+            if frame is None:
+                continue
+            try:
+                if frame[3] & 0x80:
+                    src, dst, dat = cdnet_l1.from_frame(frame, self.net)
+                else:
+                    src, dst, dat = cdnet_l0.from_frame(frame, self.net)
+            except Exception as err: # a bad frame must not end the receive thread
+                self.logger.warning(f'drop frame: {err}: {frame.hex(" ")}')
+                continue
             # TODO: check dst addr
             if dst[1] not in self.ns.sockets:
                 self.logger.warning('port %d not found, drop' % dst[1])

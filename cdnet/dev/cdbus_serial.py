@@ -164,6 +164,9 @@ class CDBusSerial(threading.Thread):
         frame += modbus_crc(frame).to_bytes(2, byteorder='little')
         if self.echo:
             self.echo_dat = frame
+        if not self.com: # the port has not been found since open
+            self.logger.warning(f'send: {self.port} not opened')
+            return serial.serialutil.PortNotOpenError()
         try:
             self.com.write(frame)
             return None
