@@ -19,8 +19,14 @@ def dump_ports(name='cdnet.dump_ports'):
 
 def get_ports():
     ports = []
-    for d in list_ports.comports():
-        ports.append(f'{d.device} - {d.product} | {d.hwid}')
+    try:
+        for d in list_ports.comports():
+            ports.append(f'{d.device} - {d.product} | {d.hwid}')
+    except Exception as err:
+        # a usb device unplugged while pyserial reads its sysfs entries makes comports()
+        # raise (TypeError from int(None, 16) in pyserial 3.5); the port list is empty
+        # for this round and the caller asks again
+        logging.getLogger('cdnet.get_ports').warning(f'list ports err: {err!r}')
     return ports
 
 def get_port(port, unique=False):
