@@ -111,8 +111,12 @@ class CDNetSocket():
 
     def sendto(self, data, addr):
         dst_addr = list(map(lambda x: x and int(x, 16) or 0, addr[0].split(':')))
-        intf = self.ns.intfs[dst_addr[1]]
-        src_addr = (dst_addr[0], dst_addr[1], intf.mac)
+        if dst_addr[0] & 0x10: # multicast (90 / b0): dst_addr[1] is mh, not a net
+            intf = next(iter(self.ns.intfs.values()))
+        else:
+            intf = self.ns.intfs[dst_addr[1]]
+        # 00 for level 0; 80 or a0 for level 1, multicast 90 / b0 included
+        src_addr = (dst_addr[0] & 0xa0, intf.net, intf.mac)
         src = ':'.join('%02x' % x for x in src_addr)
         return intf.sendto((src, self.port), addr, data)
 

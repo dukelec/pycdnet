@@ -18,15 +18,12 @@ def to_payload(src, dst, dat):
     dst_port = dst[1]
 
     assert src_addr[0] == 0x80 or src_addr[0] == 0xa0
-    assert dst_addr[0] == 0x80 or dst_addr[0] == 0xa0 or dst_addr[0] == 0xf0
+    # the dst type byte is the header byte with the PORT_SIZE bits cleared:
+    # 80: local link, a0: unique local, 90: local multicast, b0: cross net multicast
+    assert (dst_addr[0] & 0xcf) == 0x80
 
-    multi = CDN_MULTI_NONE
-    if src_addr[0] == 0xa0:
-        multi |= CDN_MULTI_NET
-    if dst_addr[0] == 0xf0:
-        multi |= CDN_MULTI_CAST
-
-    hdr = 0x80 | (multi << 4)
+    multi = (dst_addr[0] >> 4) & 3
+    hdr = dst_addr[0]
     payload = b''
 
     if multi & CDN_MULTI_NET:
@@ -71,8 +68,7 @@ def from_payload(payload, src_mac, dst_mac, local_net=0):
         src_addr = (0x80, local_net, src_mac)
 
     if multi != CDN_MULTI_NONE:
-        dst_addr = (multi & CDN_MULTI_CAST) and (0xf0,) or (0xa0,)
-        dst_addr += _struct.unpack("<BB", remains[:2])
+        dst_addr = (hdr & 0xb0,) + _struct.unpack("<BB", remains[:2]) # 90, a0 or b0
         remains = remains[2:]
     else:
         dst_addr = (0x80, local_net, dst_mac)
