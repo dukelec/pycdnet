@@ -9,7 +9,7 @@
 import threading
 import queue
 import serial
-from time import sleep
+from time import sleep, time_ns
 from ..utils.serial_get_port import *
 from ..utils.crc import *
 from ..utils.log import *
@@ -93,6 +93,7 @@ class CDBusSerial(threading.Thread):
                         self.rx_bytes = b''
                     continue
                 
+                rx_ts = time_ns() # when the frames of this read came in, give or take the usb poll
                 rx_dat = bchar + self.com.read_all()
                 #self.logger.log(logging.VERBOSE, '>>> ' + in_dat.hex(' '))
                 
@@ -136,7 +137,7 @@ class CDBusSerial(threading.Thread):
                             break
                         else:
                             self.logger.log(logging.VERBOSE, '-> ' + self.rx_bytes[:-2].hex(' '))
-                            self.rx_queue.put(self.rx_bytes[:-2])
+                            self.rx_queue.put((rx_ts, self.rx_bytes[:-2]))
                             self.rx_bytes = b''
                 
                 if len(rx_dat):
@@ -174,9 +175,11 @@ class CDBusSerial(threading.Thread):
             self.logger.warning(f'send: {err}')
             return err
     
-    def recv(self, timeout=None):
+    def recv(self, timeout=None, with_ts=False):
+        """the next frame (crc stripped), None on timeout; with_ts: (ts_ns, frame), ts_ns when it was read in"""
         try:
-            return self.rx_queue.get(timeout=timeout)
+            ts, frame = self.rx_queue.get(timeout=timeout)
         except queue.Empty:
             return None
+        return (ts, frame) if with_ts else frame
 
